@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grow a Garden</title>
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #a0e7ff;
+}
+#top-bar {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    background-color: #fff;
+    border-bottom: 2px solid #000;
+    align-items: center;
+}
+button {
+    padding: 10px;
+    font-size: 14px;
+    cursor: pointer;
+}
+#garden {
+    position: relative;
+    width: 100%;
+    height: 80vh;
+    background-color: #7ec850;
+    overflow: hidden;
+}
+#soil {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 50%;
+    background-color: #8b4513;
+}
+.plant {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    text-align: center;
+    line-height: 40px;
+    color: #fff;
+    font-weight: bold;
+    user-select: none;
+    font-size: 10px;
+    overflow: hidden;
+}
+.common { background-color: #1e90ff; }
+.uncommon { background-color: #32cd32; }
+.rare { background-color: #ffa500; }
+.holy { background-color: #ff69b4; }
+.mythic { background-color: #9400d3; }
+.grown { border-color: white; }
+
+/* Popup menus */
+.menu {
+    position: absolute;
+    top: 50px;
+    left: 10px;
+    background-color: #fff;
+    border: 2px solid #000;
+    padding: 10px;
+    display: none;
+    z-index: 10;
+}
+.menu h3 {
+    margin-top: 0;
+}
+#money-display {
+    font-weight: bold;
+    font-size: 16px;
+}
+</style>
+</head>
+<body>
+
+<div id="top-bar">
+    <button id="seed-store-btn">Seed Store</button>
+    <button id="tools-btn">Gardening Tools</button>
+    <button id="sell-btn" style="background-color: red; color: white;">Sell Plants</button>
+    <div id="money-display">Money: $10</div>
+</div>
+
+<div id="garden">
+    <div id="soil"></div>
+</div>
+
+<!-- Seed Store Menu -->
+<div class="menu" id="seed-menu">
+    <h3>Seed Store</h3>
+    <button onclick="buySeed('Blueberry')">Blueberry Seed ($10)</button><br>
+    <button onclick="buySeed('Strawberry')">Strawberry Seed ($10)</button><br>
+    <button onclick="buySeed('Watermelon')">Watermelon Seed ($40)</button><br>
+    <button onclick="buySeed('Pumpkin')">Pumpkin Seed ($230)</button><br>
+    <button onclick="buySeed('Apple Tree')">Apple Tree Seed ($1000)</button><br>
+    <button onclick="buySeed('Eldritch Flower')">Eldritch Flower Seed ($5000)</button><br>
+</div>
+
+<!-- Gardening Tools Menu -->
+<div class="menu" id="tools-menu">
+    <h3>Gardening Tools</h3>
+    <button onclick="buyTool('Sprinkler', 50)">Sprinkler ($50)</button><br>
+    <button onclick="buyTool('Water Bucket', 20)">Water Bucket ($20)</button><br>
+    <button onclick="buyTool('Seed Pass', 10000)">Pick Any Seed Pass ($10000)</button><br>
+</div>
+
+<script>
+let money = 10;
+let selectedSeed = null;
+let selectedTool = null;
+let sellMode = false;
+let seedPass = false;
+
+const plantData = {
+    "Blueberry": {cost: 10, sell: 20, rarity: "common"},
+    "Strawberry": {cost: 10, sell: 20, rarity: "common"},
+    "Watermelon": {cost: 40, sell: 100, rarity: "uncommon"},
+    "Pumpkin": {cost: 230, sell: 300, rarity: "rare"},
+    "Apple Tree": {cost: 1000, sell: 1500, rarity: "holy"},
+    "Eldritch Flower": {cost: 5000, sell: 10000, rarity: "mythic"}
+};
+
+function updateMoney() {
+    document.getElementById("money-display").innerText = `Money: $${money}`;
+}
+
+document.getElementById("seed-store-btn").addEventListener("click", () => {
+    document.getElementById("seed-menu").style.display = "block";
+    document.getElementById("tools-menu").style.display = "none";
+});
+
+document.getElementById("tools-btn").addEventListener("click", () => {
+    document.getElementById("tools-menu").style.display = "block";
+    document.getElementById("seed-menu").style.display = "none";
+});
+
+document.getElementById("sell-btn").addEventListener("click", () => {
+    sellMode = !sellMode;
+    if(sellMode){
+        alert("Click on a grown plant to sell it!");
+    }
+});
+
+// Buying seeds
+function buySeed(seedName) {
+    const seed = plantData[seedName];
+    if(seedPass || money >= seed.cost) {
+        selectedSeed = seedName;
+        if(!seedPass) money -= seed.cost;
+        document.getElementById("seed-menu").style.display = "none";
+        updateMoney();
+        if(seedPass) seedPass = false; // one-time pass
+    } else {
+        alert("Not enough money!");
+    }
+}
+
+// Buying tools
+function buyTool(tool, price) {
+    if(money >= price) {
+        money -= price;
+        if(tool === "Seed Pass") seedPass = true;
+        alert(`You bought a ${tool}!`);
+        updateMoney();
+    } else {
+        alert("Not enough money!");
+    }
+}
+
+// Planting seeds
+document.getElementById("garden").addEventListener("click", (e) => {
+    const gardenRect = document.getElementById("soil").getBoundingClientRect();
+    if(selectedSeed && e.clientY > gardenRect.top) {
+        const plant = document.createElement("div");
+        plant.classList.add("plant", plantData[selectedSeed].rarity);
+        plant.style.left = (e.clientX - 20) + "px";
+        plant.style.top = (e.clientY - 20) + "px";
+        plant.dataset.grown = false;
+        plant.dataset.sellPrice = plantData[selectedSeed].sell;
+        plant.innerText = selectedSeed[0]; // Show first letter
+
+        document.getElementById("garden").appendChild(plant);
+
+        setTimeout(() => {
+            plant.classList.add("grown");
+            plant.dataset.grown = true;
+        }, 25000); // 1 minute
+
+        selectedSeed = null;
+    } else if(sellMode) {
+        if(e.target.classList.contains("plant") && e.target.dataset.grown === "true") {
+            money += parseInt(e.target.dataset.sellPrice);
+            e.target.remove();
+            updateMoney();
+        } else {
+            alert("This plant is not grown yet!");
+        }
+    }
+});
+
+updateMoney();
+</script>
+
+</body>
+</html>
